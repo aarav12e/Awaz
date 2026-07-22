@@ -2,6 +2,8 @@ import { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { FiUploadCloud, FiMapPin, FiFilm, FiX } from 'react-icons/fi'
 import Waveform from '../components/Waveform'
+import api from '../lib/axios'
+import { useNavigate } from 'react-router-dom'
 
 export default function Upload() {
   const [dragOver, setDragOver] = useState(false)
@@ -10,6 +12,7 @@ export default function Upload() {
   const [location, setLocation] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const inputRef = useRef(null)
+  const navigate = useNavigate()
 
   const handleFile = (f) => {
     if (!f) return
@@ -41,14 +44,32 @@ export default function Upload() {
       return
     }
     setSubmitting(true)
-    // Placeholder — will POST multipart form data to /api/posts,
-    // which streams the file to Cloudinary on the backend.
-    await new Promise((r) => setTimeout(r, 1600))
-    setSubmitting(false)
-    toast.success('Dispatch submitted for review')
-    setFile(null)
-    setCaption('')
-    setLocation('')
+
+    try {
+      const formData = new FormData()
+      formData.append('video', file)
+      formData.append('caption', caption)
+      if (location) formData.append('locationName', location)
+      
+      const { data } = await api.post('/posts', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (data.success) {
+        toast.success('Dispatch submitted successfully!')
+        setFile(null)
+        setCaption('')
+        setLocation('')
+        navigate('/')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error(err.response?.data?.message || 'Failed to upload dispatch')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

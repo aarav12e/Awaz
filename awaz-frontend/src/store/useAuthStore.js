@@ -1,144 +1,141 @@
 import { create } from 'zustand'
+import api from '../lib/axios'
 
-const getStoredTheme = () => {
-  if (typeof window === 'undefined') return 'white'
-  return localStorage.getItem('awaz-theme') || 'white'
+// ─── localStorage helpers ────────────────────────────────────────────────────
+const ls = {
+  get: (key, fallback = null) => {
+    if (typeof window === 'undefined') return fallback
+    try {
+      const raw = localStorage.getItem(key)
+      return raw ? JSON.parse(raw) : fallback
+    } catch { return fallback }
+  },
+  set: (key, value) => {
+    if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(value))
+  },
+  remove: (key) => {
+    if (typeof window !== 'undefined') localStorage.removeItem(key)
+  },
 }
 
-const getStoredSession = () => {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = localStorage.getItem('awaz-session')
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
+// ─── Store ───────────────────────────────────────────────────────────────────
+const useAuthStore = create((set, get) => {
+  // session is { token, ...user }
+  const session = ls.get('awaz-session')
+
+  return {
+    user: session && session.token ? session : null,
+    isAuthenticated: Boolean(session && session.token),
+    isLoading: false,
+    theme: ls.get('awaz-theme', 'white'),
+    
+    // Theme
+    setTheme: (theme) => {
+      ls.set('awaz-theme', theme)
+      set({ theme })
+    },
+
+    // ── Auth ──────────────────────────────────────────────────────────────
+    login: async ({ email, password }) => {
+      set({ isLoading: true })
+      try {
+        const { data } = await api.post('/auth/login', { email, password })
+        if (data.success) {
+          const sessionData = { ...data.user, token: data.token }
+          ls.set('awaz-session', sessionData)
+          set({
+            isLoading: false,
+            isAuthenticated: true,
+            user: sessionData,
+          })
+          return { error: null }
+        }
+      } catch (err) {
+        set({ isLoading: false })
+        return { error: err.response?.data?.message || 'Login failed' }
+      }
+    },
+
+    signup: async ({ name, email, password }) => {
+      set({ isLoading: true })
+      try {
+        const { data } = await api.post('/auth/signup', { name, email, password })
+        if (data.success) {
+          const sessionData = { ...data.user, token: data.token }
+          ls.set('awaz-session', sessionData)
+          set({
+            isLoading: false,
+            isAuthenticated: true,
+            user: sessionData,
+          })
+          return { error: null }
+        }
+      } catch (err) {
+        set({ isLoading: false })
+        return { error: err.response?.data?.message || 'Signup failed' }
+      }
+    },
+
+    logout: () => {
+      ls.remove('awaz-session')
+      set({ user: null, isAuthenticated: false })
+    },
+
+    // ── Profile ───────────────────────────────────────────────────────────
+    updateProfile: async ({ name, handle }) => {
+      try {
+        const { data } = await api.put('/users/me', { name, handle })
+        if (data.success) {
+          const current = get().user
+          const updatedSession = { ...current, ...data.user }
+          ls.set('awaz-session', updatedSession)
+          set({ user: updatedSession })
+          return { error: null }
+        }
+      } catch (err) {
+        return { error: err.response?.data?.message || 'Update failed' }
+      }
+    },
+
+    fetchMe: async () => {
+      try {
+        const { data } = await api.get('/auth/me')
+        if (data.success) {
+          const current = get().user
+          const updatedSession = { ...current, ...data.user }
+          ls.set('awaz-session', updatedSession)
+          set({ user: updatedSession, isAuthenticated: true })
+        }
+      } catch (err) {
+        ls.remove('awaz-session')
+        set({ user: null, isAuthenticated: false })
+      }
+    },
+
+    // ── Follow / Unfollow ─────────────────────────────────────────────────
+    followUser: async (targetUserId) => {
+      try {
+        const { data } = await api.put(`/users/${targetUserId}/follow`)
+        if (data.success) {
+           await get().fetchMe() // refresh current user to update following list if we store it
+        }
+      } catch (err) {
+        console.error('Follow failed', err)
+      }
+    },
+    
+    unfollowUser: async (targetUserId) => {
+      try {
+        // Our backend uses the same endpoint for follow/unfollow toggle
+        const { data } = await api.put(`/users/${targetUserId}/follow`)
+        if (data.success) {
+           await get().fetchMe()
+        }
+      } catch (err) {
+        console.error('Unfollow failed', err)
+      }
+    },
   }
-}
-
-const getStoredRegisteredUsers = () => {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem('awaz-registered-users')
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-const persistRegisteredUsers = (users) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('awaz-registered-users', JSON.stringify(users))
-  }
-}
-
-// Frontend-only mock auth store for now.
-// Backend integration (JWT, /api/auth routes) will replace the mock calls later.
-const useAuthStore = create((set, get) => ({
-  user: getStoredSession(),
-  isAuthenticated: Boolean(getStoredSession()),
-  isLoading: false,
-  theme: getStoredTheme(),
-  registeredUsers: getStoredRegisteredUsers(),
-
-  setTheme: (theme) => {
-    if (typeof window !== 'undefined') localStorage.setItem('awaz-theme', theme)
-    set({ theme })
-  },
-
-  persistSession: (user) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('awaz-session', JSON.stringify(user))
-    }
-  },
-
-  syncRegisteredUsers: () => {
-    set({ registeredUsers: getStoredRegisteredUsers() })
-  },
-
-  updateProfile: ({ name, handle }) => {
-    const current = get().user
-    if (!current) return
-    const updatedUser = { ...current, name, handle }
-    set((state) => {
-      const nextUsers = state.registeredUsers.map((entry) => entry.id === updatedUser.id ? { ...entry, ...updatedUser } : entry)
-      if (typeof window !== 'undefined') localStorage.setItem('awaz-registered-users', JSON.stringify(nextUsers))
-      return { user: updatedUser, registeredUsers: nextUsers }
-    })
-  },
-
-  updatePassword: (oldPassword, newPassword) => {
-    const current = get().user
-    if (!current) return true
-    if (oldPassword !== '123456') return false
-    return true
-  },
-
-  login: async ({ email, password }) => {
-    set({ isLoading: true })
-    await new Promise((r) => setTimeout(r, 900))
-    const profile = {
-      id: 'u_001',
-      name: 'Aarav Kumar',
-      handle: '@aarav.reports',
-      avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aarav',
-      verified: false,
-      password: '123456',
-    }
-    set((state) => {
-      const nextUsers = state.registeredUsers.some((entry) => entry.id === profile.id)
-        ? state.registeredUsers.map((entry) => entry.id === profile.id ? { ...entry, ...profile } : entry)
-        : [...state.registeredUsers, profile]
-      persistRegisteredUsers(nextUsers)
-      get().persistSession(profile)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('awaz-users-updated', { detail: nextUsers }))
-      }
-      return {
-        isLoading: false,
-        isAuthenticated: true,
-        user: profile,
-        registeredUsers: nextUsers,
-      }
-    })
-    return true
-  },
-
-  signup: async ({ name, email, password }) => {
-    set({ isLoading: true })
-    await new Promise((r) => setTimeout(r, 900))
-    const profile = {
-      id: `u_${Date.now()}`,
-      name,
-      handle: '@' + name.toLowerCase().replace(/\s+/g, '.'),
-      avatar: `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}`,
-      verified: false,
-      password,
-    }
-    set((state) => {
-      const nextUsers = state.registeredUsers.some((entry) => entry.id === profile.id)
-        ? state.registeredUsers.map((entry) => entry.id === profile.id ? { ...entry, ...profile } : entry)
-        : [...state.registeredUsers, profile]
-      persistRegisteredUsers(nextUsers)
-      get().persistSession(profile)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('awaz-users-updated', { detail: nextUsers }))
-      }
-      return {
-        isLoading: false,
-        isAuthenticated: true,
-        user: profile,
-        registeredUsers: nextUsers,
-      }
-    })
-    return true
-  },
-
-  logout: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('awaz-session')
-    }
-    set({ user: null, isAuthenticated: false })
-  },
-}))
+})
 
 export default useAuthStore

@@ -16,6 +16,9 @@ const Upload = lazy(() => import('./pages/Upload'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Messages = lazy(() => import('./pages/Messages'))
+const Followers = lazy(() => import('./pages/Followers'))
+const Following = lazy(() => import('./pages/Following'))
+const UserProfile = lazy(() => import('./pages/UserProfile'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function RouteFallback() {
@@ -87,6 +90,9 @@ export default function App() {
             <Route path="/explore" element={<Explore />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/followers" element={<Followers />} />
+            <Route path="/following" element={<Following />} />
+            <Route path="/user/:userId" element={<UserProfile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/messages" element={<Messages />} />
           </Route>

@@ -38,7 +38,11 @@ export default function Signup() {
       toast.error('Password must be at least 6 characters')
       return
     }
-    await signup({ name, email, password })
+    const result = await signup({ name, email, password })
+    if (result?.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success('Account created — welcome to Awaz')
     navigate('/')
   }
