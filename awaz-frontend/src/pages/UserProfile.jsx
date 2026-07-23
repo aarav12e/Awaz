@@ -9,7 +9,7 @@ import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
 
 export default function UserProfile() {
-  const { userId } = useParams() // this is actually the handle now
+  const { userId, handle: paramHandle } = useParams()
   const navigate = useNavigate()
   
   const { user, followUser, unfollowUser } = useAuthStore()
@@ -17,16 +17,22 @@ export default function UserProfile() {
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isFollowing, setIsFollowing] = useState(false)
+
+  const targetIdentifier = paramHandle || userId
+  const isOwnProfile = user && profile && (user.id === profile.id || user._id === profile._id)
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!targetIdentifier) return
       setLoading(true)
       try {
-        const handle = userId.replace('@', '')
-        const { data } = await api.get(`/users/${handle}`)
+        const cleanHandle = targetIdentifier.replace('@', '')
+        const { data } = await api.get(`/users/${cleanHandle}`)
         if (data.success) {
           setProfile(data.user)
-          setPosts(data.posts)
+          setPosts(data.posts || [])
+          setIsFollowing(Boolean(data.user.isFollowing))
         }
       } catch (err) {
         console.error(err)
@@ -35,30 +41,22 @@ export default function UserProfile() {
       }
     }
     fetchProfile()
-  }, [userId])
+  }, [targetIdentifier])
 
-  const isOwnProfile = user && profile && user.id === profile.id
-  
-  // Since we don't have the current user's full following list reliably in the store right now,
-  // we check if the profile's followers include the current user. But wait, `followerCount` is just a number.
-  // The backend `getProfile` doesn't currently return if *we* are following them.
-  // For a complete app, the backend should return `isFollowing` boolean.
-  // Let's assume we maintain a basic optimistic state if not returned.
-  const [isFollowing, setIsFollowing] = useState(false) 
-  
   const handleFollowToggle = async () => {
     if (!user) {
       toast.error('Please log in')
       return
     }
+    const profileId = profile._id || profile.id
     if (isFollowing) {
       setIsFollowing(false)
       toast('Unfollowed')
-      await unfollowUser(profile.id)
+      await unfollowUser(profileId)
     } else {
       setIsFollowing(true)
       toast.success(`Following ${profile.name}`)
-      await followUser(profile.id)
+      await followUser(profileId)
     }
   }
 
@@ -126,9 +124,9 @@ export default function UserProfile() {
               {isFollowing ? (
                 <button
                   onClick={handleFollowToggle}
-                  className="btn btn-sm btn-ghost border border-white/10 gap-2"
+                  className="btn btn-sm bg-white/10 hover:bg-red-600/20 hover:text-red-400 border border-white/10 gap-2 transition-all"
                 >
-                  <FiUserCheck size={15} /> Following
+                  <FiUserCheck size={15} /> Unfollow
                 </button>
               ) : (
                 <button
@@ -138,6 +136,9 @@ export default function UserProfile() {
                   <FiUserPlus size={15} /> Follow
                 </button>
               )}
+              <Link to={`/messages?user=${profile._id}`} className="btn btn-sm btn-outline btn-primary gap-2">
+                <FiMessageCircle size={15} /> Message
+              </Link>
             </div>
           ) : (
             <div className="pb-2">
@@ -155,14 +156,14 @@ export default function UserProfile() {
           <p className="font-display text-lg">{posts.length}</p>
           <p className="text-[10px] font-mono uppercase text-accent">Dispatches</p>
         </div>
-        <div className="rounded-2xl bg-base-200/70 p-3">
+        <Link to={`/${profile.handle}/followers`} className="rounded-2xl bg-base-200/70 p-3 transition-colors hover:bg-base-200">
           <p className="font-display text-lg">{profile.followerCount || 0}</p>
           <p className="text-[10px] font-mono uppercase text-accent">Followers</p>
-        </div>
-        <div className="rounded-2xl bg-base-200/70 p-3">
+        </Link>
+        <Link to={`/${profile.handle}/following`} className="rounded-2xl bg-base-200/70 p-3 transition-colors hover:bg-base-200">
           <p className="font-display text-lg">{profile.followingCount || 0}</p>
           <p className="text-[10px] font-mono uppercase text-accent">Following</p>
-        </div>
+        </Link>
       </div>
 
       {/* Posts grid */}

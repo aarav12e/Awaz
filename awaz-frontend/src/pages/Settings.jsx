@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { FiArrowLeft, FiCheck, FiLock, FiMoon, FiUser } from 'react-icons/fi'
+import { FiArrowLeft, FiCheck, FiCamera, FiLock, FiMoon, FiGlobe } from 'react-icons/fi'
 import useAuthStore from '../store/useAuthStore'
+import api from '../lib/axios'
 
 const themeOptions = [
   { value: 'white', label: 'White', description: 'Clean and bright' },
@@ -10,139 +11,197 @@ const themeOptions = [
 ]
 
 export default function Settings() {
-  const { user, updateProfile, updatePassword, theme, setTheme } = useAuthStore()
-  const [displayName, setDisplayName] = useState(user?.name ?? '')
-  const [username, setUsername] = useState(user?.handle?.replace('@', '') ?? '')
+  const { user, updateProfile, theme, setTheme } = useAuthStore()
+
+  const [name, setName] = useState(user?.name || '')
+  const [handle, setHandle] = useState(user?.handle?.replace('@', '') || '')
+  const [website, setWebsite] = useState(user?.website || '')
+  const [bio, setBio] = useState(user?.bio || '')
+  const [gender, setGender] = useState(user?.gender || 'Prefer not to say')
+  const [avatar, setAvatar] = useState(
+    user?.avatar || `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user?.name || 'User')}`
+  )
+
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleProfileSave = (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault()
-    if (!displayName.trim() || !username.trim()) {
-      toast.error('Display name and username are required')
+    if (!name.trim() || !handle.trim()) {
+      toast.error('Name and Username are required')
       return
     }
 
-    updateProfile({
-      name: displayName.trim(),
-      handle: `@${username.trim().replace(/^@/, '')}`,
-    })
-    toast.success('Profile updated')
+    setLoading(true)
+    try {
+      const payload = {
+        name: name.trim(),
+        handle: `@${handle.trim().replace(/^@/, '')}`,
+        website: website.trim(),
+        bio: bio.trim(),
+        gender,
+        avatar,
+      }
+
+      // 1. Send update to backend API
+      const { data } = await api.put('/users/me', payload)
+      if (data.success) {
+        updateProfile(payload)
+        toast.success('Profile updated successfully!')
+      }
+    } catch (err) {
+      console.error('Failed to update profile:', err)
+      // Local fallback
+      updateProfile({
+        name: name.trim(),
+        handle: `@${handle.trim().replace(/^@/, '')}`,
+        website: website.trim(),
+        bio: bio.trim(),
+        gender,
+        avatar,
+      })
+      toast.success('Profile saved locally')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handlePasswordSave = (e) => {
-    e.preventDefault()
-    if (!oldPassword || !newPassword) {
-      toast.error('Fill in both password fields')
-      return
+  const handleAvatarChange = () => {
+    const newAvatarUrl = prompt('Enter image URL for profile photo:', avatar)
+    if (newAvatarUrl && newAvatarUrl.trim()) {
+      setAvatar(newAvatarUrl.trim())
+      toast.success('Profile photo updated')
     }
-    if (newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters')
-      return
-    }
-
-    const updated = updatePassword(oldPassword, newPassword)
-    if (!updated) {
-      toast.error('Old password does not match')
-      return
-    }
-
-    setOldPassword('')
-    setNewPassword('')
-    toast.success('Password updated')
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2 text-sm text-accent">
-        <Link to="/profile" className="inline-flex items-center gap-2 hover:text-bone">
+    <div className="max-w-2xl mx-auto space-y-6 py-2">
+      {/* Top Header Navigation */}
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <Link to="/profile" className="inline-flex items-center gap-2 text-sm text-accent hover:text-white transition-colors">
           <FiArrowLeft size={16} /> Back to profile
         </Link>
+        <h1 className="font-display text-xl font-bold">Edit Profile</h1>
+        <div className="w-16" />
       </div>
 
-      <section className="rounded-[28px] border border-white/10 bg-gradient-to-br from-fuchsia-500/20 via-base-200 to-cyan-500/20 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="rounded-2xl bg-base-100/70 p-2.5">
-            <FiUser size={18} className="text-primary" />
-          </div>
+      {/* Profile Photo Header Card */}
+      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-base-200/80 p-4">
+        <div className="flex items-center gap-4">
+          <img
+            src={avatar}
+            alt={name}
+            className="h-14 w-14 rounded-full bg-base-300 object-cover ring-2 ring-primary/40"
+          />
           <div>
-            <h1 className="font-display text-xl">Profile settings</h1>
-            <p className="text-sm text-accent">Change your identity and keep your account secure.</p>
+            <p className="font-semibold text-base">{handle}</p>
+            <p className="text-sm text-accent">{name}</p>
           </div>
         </div>
 
-        <form onSubmit={handleProfileSave} className="space-y-3">
-          <label className="block">
-            <span className="text-xs uppercase tracking-[0.2em] text-accent">Display name</span>
-            <input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="mt-1 input input-bordered w-full bg-base-100/70"
-              placeholder="Your name"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs uppercase tracking-[0.2em] text-accent">Username</span>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 input input-bordered w-full bg-base-100/70"
-              placeholder="yourname"
-            />
-          </label>
-          <button className="btn btn-primary gap-2">
-            <FiCheck size={16} /> Save profile
-          </button>
-        </form>
-      </section>
+        <button
+          type="button"
+          onClick={handleAvatarChange}
+          className="btn btn-sm btn-primary gap-2 text-xs font-semibold"
+        >
+          <FiCamera size={14} /> Change profile photo
+        </button>
+      </div>
 
-      <section className="rounded-[28px] border border-white/10 bg-base-200/70 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="rounded-2xl bg-base-100/70 p-2.5">
-            <FiLock size={18} className="text-primary" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg">Password change</h2>
-            <p className="text-sm text-accent">Type your old password before choosing a new one.</p>
-          </div>
+      {/* Main Edit Profile Form */}
+      <form onSubmit={handleProfileSubmit} className="rounded-2xl border border-white/10 bg-base-200/50 p-6 space-y-5">
+        {/* Name */}
+        <div>
+          <label className="text-xs font-mono uppercase tracking-wider text-accent mb-1.5 block">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input input-bordered w-full bg-base-100/70 text-sm focus:border-primary focus:outline-none"
+            placeholder="Aarav Kumar"
+          />
+          <p className="text-[11px] text-accent mt-1">
+            Help people discover your account by using the name you're known by.
+          </p>
         </div>
 
-        <form onSubmit={handlePasswordSave} className="space-y-3">
-          <label className="block">
-            <span className="text-xs uppercase tracking-[0.2em] text-accent">Old password</span>
-            <input
-              type="password"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              className="mt-1 input input-bordered w-full bg-base-100/70"
-              placeholder="Enter current password"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs uppercase tracking-[0.2em] text-accent">New password</span>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="mt-1 input input-bordered w-full bg-base-100/70"
-              placeholder="At least 6 characters"
-            />
-          </label>
-          <button className="btn btn-outline btn-primary gap-2">
-            <FiLock size={16} /> Update password
-          </button>
-        </form>
-      </section>
+        {/* Username */}
+        <div>
+          <label className="text-xs font-mono uppercase tracking-wider text-accent mb-1.5 block">Username</label>
+          <input
+            type="text"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            className="input input-bordered w-full bg-base-100/70 text-sm font-mono focus:border-primary focus:outline-none"
+            placeholder="aarav12f"
+          />
+        </div>
 
-      <section className="rounded-[28px] border border-white/10 bg-base-200/70 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="rounded-2xl bg-base-100/70 p-2.5">
-            <FiMoon size={18} className="text-primary" />
+        {/* Website */}
+        <div>
+          <label className="text-xs font-mono uppercase tracking-wider text-accent mb-1.5 block">Website</label>
+          <div className="relative">
+            <FiGlobe className="absolute left-3 top-3 text-accent" size={16} />
+            <input
+              type="text"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="input input-bordered w-full pl-9 bg-base-100/70 text-sm focus:border-primary focus:outline-none"
+              placeholder="Website"
+            />
           </div>
-          <div>
-            <h2 className="font-display text-lg">Theme palette</h2>
-            <p className="text-sm text-accent">Pick a look that matches your mood.</p>
+          <p className="text-[11px] text-accent/80 mt-1.5 leading-normal">
+            Editing your links is only available on mobile. Visit the Awaz app and edit your profile to change the websites in your bio.
+          </p>
+        </div>
+
+        {/* Bio */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-mono uppercase tracking-wider text-accent">Bio</label>
+            <span className={`text-[11px] font-mono ${bio.length > 150 ? 'text-error font-bold' : 'text-accent'}`}>
+              {bio.length} / 150
+            </span>
           </div>
+          <textarea
+            rows={4}
+            maxLength={150}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            className="textarea textarea-bordered w-full bg-base-100/70 text-sm focus:border-primary focus:outline-none resize-none"
+            placeholder="Hi, I'm Aarav..."
+          />
+        </div>
+
+        {/* Gender */}
+        <div>
+          <label className="text-xs font-mono uppercase tracking-wider text-accent mb-1.5 block">Gender</label>
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="select select-bordered w-full bg-base-100/70 text-sm focus:border-primary focus:outline-none"
+          >
+            <option value="Prefer not to say">Prefer not to say</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+
+        {/* Submit */}
+        <div className="pt-2">
+          <button type="submit" disabled={loading} className="btn btn-primary px-8 gap-2">
+            <FiCheck size={16} /> Submit
+          </button>
+        </div>
+      </form>
+
+      {/* Theme Settings Section */}
+      <section className="rounded-2xl border border-white/10 bg-base-200/50 p-5 space-y-3">
+        <div className="flex items-center gap-3 mb-2">
+          <FiMoon size={18} className="text-primary" />
+          <h2 className="font-display font-semibold text-base">Theme Mode</h2>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -150,10 +209,14 @@ export default function Settings() {
             <button
               key={option.value}
               onClick={() => setTheme(option.value)}
-              className={`rounded-2xl border p-3 text-left transition-all ${theme === option.value ? 'border-primary bg-primary/10 shadow-[0_10px_30px_rgba(255,67,95,0.15)]' : 'border-white/10 bg-base-100/50 hover:border-primary/50'}`}
+              className={`rounded-xl border p-3 text-left transition-all ${
+                theme === option.value
+                  ? 'border-primary bg-primary/10'
+                  : 'border-white/10 bg-base-100/50 hover:border-primary/50'
+              }`}
             >
-              <div className="font-semibold">{option.label}</div>
-              <div className="text-sm text-accent">{option.description}</div>
+              <div className="font-semibold text-sm">{option.label}</div>
+              <div className="text-xs text-accent">{option.description}</div>
             </button>
           ))}
         </div>

@@ -16,10 +16,15 @@ const getProfile = asyncHandler(async (req, res) => {
     createdAt: -1,
   });
 
+  const isFollowing = req.user
+    ? user.followers.some((id) => id.toString() === req.user._id.toString())
+    : false;
+
   res.json({
     success: true,
     user: {
       id: user._id,
+      _id: user._id,
       name: user.name,
       handle: user.handle,
       avatar: user.avatar,
@@ -28,20 +33,25 @@ const getProfile = asyncHandler(async (req, res) => {
       verified: user.verified,
       followerCount: user.followers.length,
       followingCount: user.following.length,
+      isFollowing,
     },
     posts,
   });
 });
 
-// @desc    Update own profile (name, bio, location)
+// @desc    Update own profile (name, handle, bio, website, gender, avatar)
 // @route   PUT /api/users/me
 // @access  Private
 const updateProfile = asyncHandler(async (req, res) => {
-  const { name, bio, location } = req.body;
+  const { name, handle, bio, website, gender, avatar, location } = req.body;
   const user = await User.findById(req.user._id);
 
   if (name) user.name = name;
+  if (handle) user.handle = handle.toLowerCase().replace(/^@/, '');
   if (bio !== undefined) user.bio = bio;
+  if (website !== undefined) user.website = website;
+  if (gender !== undefined) user.gender = gender;
+  if (avatar !== undefined) user.avatar = avatar;
   if (location !== undefined) user.location = location;
 
   await user.save();
@@ -106,4 +116,56 @@ const followUser = asyncHandler(async (req, res) => {
   res.json({ success: true, following: !alreadyFollowing });
 });
 
-module.exports = { getProfile, updateProfile, updateAvatar, followUser };
+// @desc    Get all reporters (for discovery/explore page)
+// @route   GET /api/users
+// @access  Private
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+  res.json({ success: true, users });
+});
+
+// @desc    Get followers of a reporter
+// @route   GET /api/users/:handle/followers
+// @access  Private
+const getFollowers = asyncHandler(async (req, res) => {
+  const user = await User.findOne({ handle: req.params.handle.toLowerCase() })
+    .populate('followers', 'name handle avatar verified');
+  if (!user) throw new ApiError(404, 'Reporter not found');
+
+  res.json({ success: true, followers: user.followers });
+});
+
+// @desc    Get who a reporter is following
+// @route   GET /api/users/:handle/following
+// @access  Private
+const getFollowing = asyncHandler(async (req, res) => {
+  const user = await User.findOne({ handle: req.params.handle.toLowerCase() })
+    .populate('following', 'name handle avatar verified');
+  if (!user) throw new ApiError(404, 'Reporter not found');
+
+  res.json({ success: true, following: user.following });
+});
+
+// @desc    Search reporters by unique handle or name
+// @route   GET /api/users/search
+// @access  Private
+const searchUsers = asyncHandler(async (req, res) => {
+  const q = req.query.q || '';
+  if (!q.trim()) {
+    return res.json({ success: true, users: [] });
+  }
+
+  const cleanQ = q.trim().replace(/^@/, '');
+  const users = await User.find({
+    $or: [
+      { handle: { $regex: cleanQ, $options: 'i' } },
+      { name: { $regex: cleanQ, $options: 'i' } },
+    ],
+  })
+    .select('-password')
+    .limit(20);
+
+  res.json({ success: true, users });
+});
+
+module.exports = { getProfile, updateProfile, updateAvatar, followUser, getAllUsers, getFollowers, getFollowing, searchUsers };

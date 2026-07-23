@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { SignUp } from '@clerk/clerk-react'
 import gsap from 'gsap'
 import toast from 'react-hot-toast'
-import { FiUser, FiMail, FiLock, FiArrowRight } from 'react-icons/fi'
+import { FiUser, FiMail, FiLock, FiArrowRight, FiAtSign } from 'react-icons/fi'
 import useAuthStore from '../store/useAuthStore'
 import Waveform from '../components/Waveform'
 
@@ -10,6 +11,7 @@ export default function Signup() {
   const navigate = useNavigate()
   const { signup, isLoading } = useAuthStore()
   const [name, setName] = useState('')
+  const [handle, setHandle] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -31,14 +33,14 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!name || !email || !password) {
-      toast.error('Fill in all fields')
+      toast.error('Fill in all required fields')
       return
     }
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters')
       return
     }
-    const result = await signup({ name, email, password })
+    const result = await signup({ name, email, password, handle })
     if (result?.error) {
       toast.error(result.error)
       return
@@ -63,12 +65,31 @@ export default function Signup() {
           <p className="text-accent text-sm">Every voice is a dispatch.</p>
         </div>
 
+        {import.meta.env.VITE_CLERK_PUBLISHABLE_KEY && !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY.includes('placeholder') ? (
+          <div className="flex justify-center my-4">
+            <SignUp routing="path" path="/signup" signInUrl="/login" />
+          </div>
+        ) : (
+
         <form onSubmit={handleSubmit} className="bg-base-200 border border-base-300 hairline rounded-xl p-6 sm:p-8 space-y-4">
           <div ref={addToForm}>
             <label className="text-xs font-mono uppercase tracking-wide text-accent mb-1.5 block">Full name</label>
             <label className="input input-bordered flex items-center gap-2 bg-base-100 border-base-300">
               <FiUser className="text-accent shrink-0" size={16} />
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Aarav Kumar" className="grow" />
+            </label>
+          </div>
+
+          <div ref={addToForm}>
+            <label className="text-xs font-mono uppercase tracking-wide text-accent mb-1.5 block">Username (Optional)</label>
+            <label className="input input-bordered flex items-center gap-2 bg-base-100 border-base-300">
+              <FiAtSign className="text-accent shrink-0" size={16} />
+              <input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="aarav.kumar"
+                className="grow font-mono text-sm"
+              />
             </label>
           </div>
 
@@ -107,6 +128,7 @@ export default function Signup() {
             </Link>
           </p>
         </form>
+        )}
       </div>
     </div>
   )

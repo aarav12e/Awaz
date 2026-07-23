@@ -3,6 +3,11 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
+    clerkId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -44,6 +49,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    website: {
+      type: String,
+      default: '',
+    },
+    gender: {
+      type: String,
+      default: 'Prefer not to say',
+    },
     verified: {
       // "PRESS" badge — flips true once a reporter is manually verified by an admin
       type: Boolean,
@@ -51,15 +64,22 @@ const userSchema = new mongoose.Schema(
     },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    resetOtp: {
+      type: String,
+      default: null,
+    },
+    resetOtpExpires: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {

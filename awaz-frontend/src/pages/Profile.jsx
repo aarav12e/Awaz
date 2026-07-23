@@ -1,126 +1,277 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiMapPin, FiSettings, FiMessageCircle, FiRadio } from 'react-icons/fi'
+import {
+  FiSettings,
+  FiMessageCircle,
+  FiGrid,
+  FiPlayCircle,
+  FiBookmark,
+  FiUserCheck,
+  FiGlobe,
+  FiPlus,
+  FiShare2,
+  FiHeart,
+  FiRadio,
+  FiCheckCircle,
+  FiCamera,
+} from 'react-icons/fi'
+import { useUser } from '@clerk/clerk-react'
+import toast from 'react-hot-toast'
 import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
 
 export default function Profile() {
-  const { user } = useAuthStore()
+  const { user: storeUser } = useAuthStore()
+  const { user: clerkUser } = useUser()
+
+  const [activeTab, setActiveTab] = useState('posts') // 'posts' | 'reels' | 'saved'
   const [posts, setPosts] = useState([])
   const [profileData, setProfileData] = useState(null)
-  
+
+  const activeUser =
+    storeUser ||
+    (clerkUser
+      ? {
+          name: clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Reporter',
+          handle: `@${clerkUser.username || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'user'}`,
+          avatar: clerkUser.imageUrl,
+          email: clerkUser.primaryEmailAddress?.emailAddress,
+        }
+      : null)
+
   useEffect(() => {
-    if (user?.handle) {
-      // Remove @ if it's there
-      const handle = user.handle.replace('@', '')
-      api.get(`/users/${handle}`)
-        .then(res => {
+    if (activeUser?.handle) {
+      const handle = activeUser.handle.replace('@', '')
+      api
+        .get(`/users/${handle}`)
+        .then((res) => {
           if (res.data.success) {
             setProfileData(res.data.user)
-            setPosts(res.data.posts)
+            setPosts(res.data.posts || [])
           }
         })
-        .catch(err => console.error(err))
+        .catch((err) => console.error(err))
     }
-  }, [user])
+  }, [activeUser])
 
-  const displayUser = profileData || user
+  const displayUser = profileData || activeUser
+
+  const name = displayUser?.name || 'New Reporter'
+  const rawHandle = displayUser?.handle || 'user'
+  const handle = rawHandle.replace(/^@/, '')
+  const avatar =
+    displayUser?.avatar ||
+    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}`
+  const bio = displayUser?.bio || ''
+  const website = displayUser?.website || ''
   const followingCount = displayUser?.followingCount || 0
   const followersCount = displayUser?.followerCount || 0
+  const verified = displayUser?.verified ?? false
+
+  const handleShareProfile = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `${name} (@${handle}) on Awaz`,
+        url: window.location.href,
+      })
+    } else {
+      navigator.clipboard.writeText(window.location.href)
+      toast.success('Profile link copied to clipboard!')
+    }
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Profile card */}
-      <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-fuchsia-500/25 via-base-200 to-cyan-500/20 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] sm:p-5">
-        <div className="mb-[-2.2rem] h-28 w-full rounded-[20px] bg-gradient-to-br from-primary/80 via-fuchsia-500/60 to-cyan-500/70" />
-        <div className="flex flex-col gap-4 px-1 pt-2 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-end gap-4">
-            <img
-              src={displayUser?.avatar || 'https://api.dicebear.com/9.x/notionists/svg?seed=Unknown'}
-              alt={displayUser?.name}
-              className="h-20 w-20 shrink-0 rounded-full border-4 border-base-100 bg-base-300 sm:h-24 sm:w-24 object-cover"
-            />
-            <div className="pb-2">
-              <h1 className="font-display text-lg sm:text-xl">{displayUser?.name}</h1>
-              <p className="text-sm font-mono text-accent">{displayUser?.handle}</p>
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10 space-y-8">
+      {/* ── Instagram Header Section ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 md:gap-16">
+        {/* Avatar Image */}
+        <div className="relative shrink-0">
+          <img
+            src={avatar}
+            alt={name}
+            className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border border-white/10 bg-base-300 shadow-lg"
+          />
+        </div>
+
+        {/* User Details & Actions */}
+        <div className="flex-1 space-y-5 text-center sm:text-left min-w-0">
+          {/* Row 1: Username & Action Buttons */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 md:gap-4">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-white flex items-center gap-1.5">
+              {handle}
+              {verified && (
+                <FiCheckCircle
+                  size={18}
+                  className="text-primary fill-primary/20 shrink-0"
+                  title="Verified Reporter"
+                />
+              )}
+            </h1>
+
+            <div className="flex items-center gap-2">
+              <Link
+                to="/settings"
+                className="btn btn-sm bg-white/10 hover:bg-white/20 border-0 text-white font-medium px-4 rounded-lg text-xs"
+              >
+                Edit profile
+              </Link>
+              <button
+                onClick={handleShareProfile}
+                className="btn btn-sm bg-white/10 hover:bg-white/20 border-0 text-white font-medium px-3 rounded-lg text-xs gap-1.5"
+              >
+                <FiShare2 size={13} /> Share profile
+              </button>
+              <Link
+                to="/settings"
+                className="btn btn-sm btn-ghost btn-square text-white/70 hover:text-white"
+              >
+                <FiSettings size={18} />
+              </Link>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 pb-2">
-            <Link to="/messages" className="btn btn-sm btn-outline btn-primary gap-2">
-              <FiMessageCircle size={16} /> Chat
+
+          {/* Row 2: Stats (Dispatches, Followers, Following) */}
+          <div className="flex items-center justify-center sm:justify-start gap-8 md:gap-10 text-sm">
+            <div>
+              <span className="font-bold text-white text-base">{posts.length}</span>{' '}
+              <span className="text-white/60">dispatches</span>
+            </div>
+            <Link
+              to={`/${handle}/followers`}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <span className="font-bold text-white text-base">{followersCount}</span>{' '}
+              <span className="text-white/60">followers</span>
             </Link>
-            <Link to="/settings" className="btn btn-sm btn-ghost gap-2">
-              <FiSettings size={16} /> Settings
+            <Link
+              to={`/${handle}/following`}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <span className="font-bold text-white text-base">{followingCount}</span>{' '}
+              <span className="text-white/60">following</span>
             </Link>
+          </div>
+
+          {/* Row 3: Name & Bio & Website */}
+          <div className="space-y-1 text-sm">
+            <p className="font-bold text-white text-base">{name}</p>
+            {bio && (
+              <p className="text-white/80 whitespace-pre-line leading-relaxed max-w-lg font-normal">
+                {bio}
+              </p>
+            )}
+            {website && (
+              <a
+                href={
+                  website.startsWith('http') ? website : `https://${website}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline text-xs pt-1"
+              >
+                <FiGlobe size={13} /> {website}
+              </a>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Location */}
-      {displayUser?.location && (
-        <div className="flex items-center gap-1.5 px-1 text-xs font-mono text-accent">
-          <FiMapPin size={12} /> {displayUser.location}
+      {/* ── Instagram Tab Navigation ─────────────────────────────────── */}
+      <div className="border-t border-white/10 pt-2">
+        <div className="flex justify-center gap-12 text-xs font-mono tracking-widest uppercase">
+          <button
+            onClick={() => setActiveTab('posts')}
+            className={`flex items-center gap-2 py-3 border-t-2 transition-all ${
+              activeTab === 'posts'
+                ? 'border-white text-white font-bold'
+                : 'border-transparent text-white/40 hover:text-white/70'
+            }`}
+          >
+            <FiGrid size={14} /> Dispatches
+          </button>
+          <button
+            onClick={() => setActiveTab('reels')}
+            className={`flex items-center gap-2 py-3 border-t-2 transition-all ${
+              activeTab === 'reels'
+                ? 'border-white text-white font-bold'
+                : 'border-transparent text-white/40 hover:text-white/70'
+            }`}
+          >
+            <FiPlayCircle size={14} /> Reels
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`flex items-center gap-2 py-3 border-t-2 transition-all ${
+              activeTab === 'saved'
+                ? 'border-white text-white font-bold'
+                : 'border-transparent text-white/40 hover:text-white/70'
+            }`}
+          >
+            <FiBookmark size={14} /> Saved
+          </button>
         </div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 px-1 text-center sm:gap-3">
-        <div className="rounded-2xl bg-base-200/70 p-3">
-          <p className="font-display text-lg">{posts.length}</p>
-          <p className="text-[10px] font-mono uppercase text-accent">Dispatches</p>
-        </div>
-        <Link
-          to="/followers"
-          className="rounded-2xl bg-base-200/70 p-3 transition-colors hover:bg-base-200"
-        >
-          <p className="font-display text-lg">{followersCount}</p>
-          <p className="text-[10px] font-mono uppercase text-accent">Followers</p>
-        </Link>
-        <Link
-          to="/following"
-          className="rounded-2xl bg-base-200/70 p-3 transition-colors hover:bg-base-200"
-        >
-          <p className="font-display text-lg">{followingCount}</p>
-          <p className="text-[10px] font-mono uppercase text-accent">Following</p>
-        </Link>
       </div>
 
-      {/* Posts grid */}
+      {/* ── Posts / Dispatches Grid ─────────────────────────────────── */}
       {posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-white/10 bg-base-200/40 py-16 px-6 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <FiRadio className="text-primary" size={28} />
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 text-white/60">
+            <FiCamera size={28} />
           </div>
           <div>
-            <p className="font-display text-base">No dispatches yet</p>
-            <p className="mt-1 text-sm text-accent">When you report something, it will appear here.</p>
+            <h3 className="font-display text-xl font-bold text-white">No Dispatches Yet</h3>
+            <p className="text-sm text-white/50 mt-1 max-w-sm">
+              When you post stories or reports, they will appear here on your profile grid.
+            </p>
           </div>
-          <Link to="/upload" className="btn btn-sm btn-primary gap-2 mt-1">
-            <FiRadio size={14} /> File a Report
+          <Link
+            to="/upload"
+            className="btn btn-sm bg-primary hover:bg-primary/90 text-white border-0 px-6 gap-2"
+          >
+            <FiPlus size={16} /> Create Dispatch
           </Link>
         </div>
       ) : (
-        <>
-          <p className="px-1 text-xs font-mono uppercase tracking-widest text-accent">Dispatches</p>
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            {posts.map((post) => (
-              <div key={post._id} className="relative aspect-[9/16] cursor-pointer group">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-4 md:gap-6">
+          {posts.map((post) => (
+            <div
+              key={post._id}
+              className="group relative aspect-square rounded-xl bg-base-200 overflow-hidden border border-white/10 shadow-md cursor-pointer"
+            >
+              {post.mediaUrl ? (
                 <img
-                  src={post.video?.thumbnailUrl || ''}
-                  alt={post.caption}
-                  className="w-full h-full object-cover rounded-[14px]"
+                  src={post.mediaUrl}
+                  alt={post.headline}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors rounded-[14px] flex flex-col items-center justify-center gap-1">
-                  {post.video?.duration && (
-                    <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-bone text-[9px] font-mono px-1.5 py-0.5 rounded-full">
-                      {Math.round(post.video.duration)}s
-                    </span>
-                  )}
+              ) : (
+                <div className="h-full w-full p-4 flex flex-col justify-between bg-gradient-to-br from-base-200 via-base-300 to-base-200">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
+                    {post.category || 'NEWS'}
+                  </span>
+                  <p className="font-semibold text-xs sm:text-sm text-white line-clamp-3">
+                    {post.headline}
+                  </p>
+                  <span className="text-[9px] font-mono text-white/40">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {/* Hover Overlay with Likes Count */}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 text-white font-bold text-sm">
+                <div className="flex items-center gap-1.5">
+                  <FiHeart size={18} className="fill-white" />
+                  <span>{post.likesCount || (post.likes ? post.likes.length : 0)}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <FiMessageCircle size={18} className="fill-white" />
+                  <span>{post.commentCount || 0}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

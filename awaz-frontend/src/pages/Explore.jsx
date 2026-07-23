@@ -1,34 +1,67 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiSearch, FiUserPlus, FiUserCheck, FiPlay } from 'react-icons/fi'
 import LazyImage from '../components/LazyImage'
-import { mockPosts } from '../lib/mockData'
+import api from '../lib/axios'
 import useAuthStore from '../store/useAuthStore'
 import toast from 'react-hot-toast'
 
 export default function Explore() {
   const [tab, setTab] = useState('posts') // 'posts' | 'people'
   const [search, setSearch] = useState('')
+  const [posts, setPosts] = useState([])
+  const [loadingPosts, setLoadingPosts] = useState(true)
 
   const { user, registeredUsers, following, followUser, unfollowUser } = useAuthStore()
 
-  // Posts grid — mock data
-  const posts = useMemo(
-    () => [...mockPosts, ...mockPosts].map((p, i) => ({ ...p, id: `${p.id}-${i}` })),
-    []
-  )
+  // Fetch real posts
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const { data } = await api.get('/posts')
+        if (data.success) {
+          setPosts(data.posts)
+        }
+      } catch (error) {
+        console.error('Failed to fetch explore posts', error)
+      } finally {
+        setLoadingPosts(false)
+      }
+    }
+    fetchPosts()
+  }, [])
 
-  // People — all users except self, filtered by search
+  const [allUsers, setAllUsers] = useState([])
+  const [loadingUsers, setLoadingUsers] = useState(true)
+
+  // Fetch real users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await api.get('/users')
+        if (data.success) {
+          setAllUsers(data.users)
+        }
+      } catch (error) {
+        console.error('Failed to fetch explore users', error)
+      } finally {
+        setLoadingUsers(false)
+      }
+    }
+    fetchUsers()
+  }, [])
+
+  // People — only shown when user types in search by unique handle or name
   const people = useMemo(() => {
-    const others = registeredUsers.filter((u) => u.id !== user?.id)
-    if (!search.trim()) return others
-    const q = search.toLowerCase()
+    if (!search.trim()) return []
+    const others = allUsers.filter((u) => u._id !== user?.id && u._id !== user?._id)
+    const q = search.toLowerCase().replace(/^@/, '')
     return others.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.handle.toLowerCase().includes(q)
     )
-  }, [registeredUsers, user, search])
+  }, [allUsers, user, search])
 
   return (
     <div className="space-y-4">
@@ -62,9 +95,9 @@ export default function Explore() {
       {tab === 'posts' && (
         <div className="grid grid-cols-3 gap-1">
           {posts.map((post) => (
-            <div key={post.id} className="relative aspect-[9/16] cursor-pointer group">
+            <div key={post._id} className="relative aspect-[9/16] cursor-pointer group">
               <LazyImage
-                src={post.videoThumb}
+                src={post.video?.thumbnailUrl}
                 alt={post.caption}
                 wrapperClassName="w-full h-full rounded"
                 className="w-full h-full object-cover rounded"
@@ -73,7 +106,7 @@ export default function Explore() {
                 <FiPlay className="text-bone opacity-0 group-hover:opacity-100 transition-opacity" size={22} />
               </div>
               <span className="absolute bottom-1 right-1 bg-black/70 text-bone text-[9px] font-mono px-1 py-0.5 rounded">
-                {post.duration}
+                {post.video?.duration ? Math.floor(post.video.duration) + 's' : '0s'}
               </span>
             </div>
           ))}
@@ -97,17 +130,21 @@ export default function Explore() {
 
           {/* User cards */}
           {people.length === 0 ? (
-            <p className="text-center text-sm text-accent py-8">No reporters found</p>
+            <p className="text-center text-sm text-accent py-12">
+              {!search.trim()
+                ? 'Type a unique username into the search bar above to search for members.'
+                : `No members found matching "${search}"`}
+            </p>
           ) : (
             <div className="space-y-2">
               {people.map((person) => {
-                const isFollowing = following.includes(person.id)
+                const isFollowing = following.includes(person._id)
                 return (
                   <div
-                    key={person.id}
+                    key={person._id}
                     className="flex items-center gap-3 rounded-2xl border border-white/10 bg-base-200/70 px-4 py-3"
                   >
-                    <Link to={`/user/${person.id}`} className="shrink-0">
+                    <Link to={`/user/${person.handle}`} className="shrink-0">
                       <img
                         src={person.avatar}
                         alt={person.name}
@@ -117,7 +154,7 @@ export default function Explore() {
 
                     <div className="min-w-0 flex-1">
                       <Link
-                        to={`/user/${person.id}`}
+                        to={`/user/${person.handle}`}
                         className="flex items-center gap-1.5 hover:text-primary transition-colors"
                       >
                         <p className="text-sm font-semibold truncate">{person.name}</p>
@@ -133,7 +170,7 @@ export default function Explore() {
                     {isFollowing ? (
                       <button
                         onClick={() => {
-                          unfollowUser(person.id)
+                          unfollowUser(person._id)
                           toast('Unfollowed')
                         }}
                         className="btn btn-xs btn-ghost border border-white/10 gap-1 shrink-0"
@@ -143,7 +180,7 @@ export default function Explore() {
                     ) : (
                       <button
                         onClick={() => {
-                          followUser(person.id)
+                          followUser(person._id)
                           toast.success(`Following ${person.name}`)
                         }}
                         className="btn btn-xs btn-primary gap-1 shrink-0"
