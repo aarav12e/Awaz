@@ -7,7 +7,6 @@ const links = [
   { to: '/upload', icon: FiPlusSquare, label: 'Report' },
   { to: '/messages', icon: FiMessageCircle, label: 'Chats' },
   { to: '/profile', icon: FiUser, label: 'Profile' },
-  { to: '/settings', icon: FiSettings, label: 'Settings' },
 ]
 
 export default function MobileNav() {

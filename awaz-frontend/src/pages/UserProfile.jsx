@@ -91,7 +91,7 @@ export default function UserProfile() {
       </button>
 
       {/* Profile card */}
-      <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-fuchsia-500/20 via-base-200 to-cyan-500/15 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] sm:p-5">
+      <div className="rounded-[28px] border border-base-content/10 bg-gradient-to-br from-fuchsia-500/20 via-base-200 to-cyan-500/15 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] sm:p-5">
         {/* Banner */}
         <div className="mb-[-2.2rem] h-28 w-full rounded-[20px] bg-gradient-to-br from-primary/80 via-fuchsia-500/60 to-cyan-500/70" />
 
@@ -124,7 +124,7 @@ export default function UserProfile() {
               {isFollowing ? (
                 <button
                   onClick={handleFollowToggle}
-                  className="btn btn-sm bg-white/10 hover:bg-red-600/20 hover:text-red-400 border border-white/10 gap-2 transition-all"
+                  className="btn btn-sm bg-base-content/10 hover:bg-red-600/20 hover:text-red-400 border border-base-content/10 gap-2 transition-all"
                 >
                   <FiUserCheck size={15} /> Unfollow
                 </button>
@@ -168,7 +168,7 @@ export default function UserProfile() {
 
       {/* Posts grid */}
       {posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-white/10 bg-base-200/40 py-14 px-6 text-center">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-base-content/10 bg-base-200/40 py-14 px-6 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <FiRadio className="text-primary" size={24} />
           </div>

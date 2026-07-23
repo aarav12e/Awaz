@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { FiSend, FiMessageCircle, FiUsers, FiSearch } from 'react-icons/fi'
+import { FiSend, FiMessageCircle, FiUsers, FiSearch, FiArrowLeft } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
@@ -17,6 +17,7 @@ export default function Messages() {
   const [draft, setDraft] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [loadingMessages, setLoadingMessages] = useState(false)
+  const [hasSetInitial, setHasSetInitial] = useState(false)
   const bottomRef = useRef(null)
 
   // 1. Fetch all users for discovery
@@ -48,20 +49,32 @@ export default function Messages() {
     return () => clearInterval(interval)
   }, [])
 
-  // 3. Handle query param targeting a specific user (e.g. from profile "Chat" button)
+  // 3. Handle query param targeting a specific user (only once when params/allUsers load)
   useEffect(() => {
     if (targetUserIdParam && allUsers.length) {
       const found = allUsers.find((u) => u._id === targetUserIdParam || u.handle === targetUserIdParam)
       if (found) {
         setActiveContact(found)
+        setHasSetInitial(true)
       }
-    } else if (!activeContact && conversations.length) {
-      setActiveContact(conversations[0].user)
-    } else if (!activeContact && allUsers.length) {
-      const other = allUsers.find((u) => u._id !== user?.id && u._id !== user?._id)
-      if (other) setActiveContact(other)
     }
-  }, [targetUserIdParam, allUsers, conversations, activeContact, user])
+  }, [targetUserIdParam, allUsers])
+
+  // Select initial contact on load if none selected yet
+  useEffect(() => {
+    if (!activeContact && !hasSetInitial) {
+      if (conversations.length) {
+        setActiveContact(conversations[0].user)
+        setHasSetInitial(true)
+      } else if (allUsers.length) {
+        const other = allUsers.find((u) => u._id !== user?.id && u._id !== user?._id)
+        if (other) {
+          setActiveContact(other)
+          setHasSetInitial(true)
+        }
+      }
+    }
+  }, [allUsers, conversations, activeContact, user, hasSetInitial])
 
   // 4. Fetch message history with activeContact
   const fetchMessages = async (recipientId) => {
@@ -141,16 +154,16 @@ export default function Messages() {
   return (
     <div className="flex flex-col gap-4" style={{ height: 'calc(100vh - 5rem)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between rounded-[24px] border border-white/10 bg-base-200/70 px-4 py-3 sm:px-5 shrink-0">
+      <div className="flex items-center justify-between rounded-[24px] border border-base-content/10 bg-base-200/70 px-4 py-3 sm:px-5 shrink-0">
         <div>
-          <h1 className="font-display text-xl tracking-tight">Direct Messages</h1>
+          <h1 className="font-display text-xl tracking-tight text-base-content">Direct Messages</h1>
           <p className="text-xs text-accent font-mono">Chat directly with any member</p>
         </div>
       </div>
 
       <div className="grid gap-3 flex-1 min-h-0 lg:grid-cols-[300px_1fr]">
         {/* Sidebar Contacts list */}
-        <div className="rounded-[24px] border border-white/10 bg-base-200/70 p-3 flex flex-col min-h-0">
+        <div className={`rounded-[24px] border border-base-content/10 bg-base-200/70 p-3 flex flex-col min-h-0 ${activeContact ? 'hidden lg:flex' : 'flex'}`}>
           <div className="relative mb-3 shrink-0">
             <FiSearch className="absolute left-3 top-3 text-accent" size={16} />
             <input
@@ -158,7 +171,7 @@ export default function Messages() {
               placeholder="Search members…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl bg-base-100/70 pl-9 pr-3 py-2 text-sm border border-white/10 focus:outline-none focus:border-primary"
+              className="w-full rounded-xl bg-base-100/70 pl-9 pr-3 py-2 text-sm border border-base-content/10 text-base-content focus:outline-none focus:border-primary"
             />
           </div>
 
@@ -178,8 +191,8 @@ export default function Messages() {
                     onClick={() => setActiveContact(contact)}
                     className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors ${
                       isActive
-                        ? 'border-primary/40 bg-primary/10'
-                        : 'border-white/5 bg-base-100/40 hover:bg-base-100/70'
+                        ? 'border-primary/40 bg-primary/10 text-base-content'
+                        : 'border-base-content/5 bg-base-100/40 hover:bg-base-100/70 text-base-content'
                     }`}
                   >
                     <div className="relative shrink-0">
@@ -196,14 +209,14 @@ export default function Messages() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
-                        <p className={`text-sm truncate ${unreadCount > 0 ? 'font-bold text-white' : 'font-semibold'}`}>
+                        <p className={`text-sm truncate ${unreadCount > 0 ? 'font-bold' : 'font-semibold'}`}>
                           {contact.name}
                         </p>
                         {unreadCount > 0 && !isActive && (
                           <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                         )}
                       </div>
-                      <p className={`text-xs truncate ${unreadCount > 0 ? 'text-white font-medium' : 'text-accent'}`}>
+                      <p className={`text-xs truncate ${unreadCount > 0 ? 'font-medium' : 'text-accent'}`}>
                         {lastMsg || contact.handle}
                       </p>
                     </div>
@@ -215,11 +228,18 @@ export default function Messages() {
         </div>
 
         {/* Chat main area */}
-        <div className="rounded-[24px] border border-white/10 bg-base-200/70 p-3 flex flex-col min-h-0">
+        <div className={`rounded-[24px] border border-base-content/10 bg-base-200/70 p-3 flex flex-col min-h-0 ${!activeContact ? 'hidden lg:flex' : 'flex'}`}>
           {activeContact ? (
             <>
               {/* Chat Header */}
-              <div className="flex items-center justify-between rounded-2xl bg-base-100/70 p-3 shrink-0 mb-3 border border-white/5">
+              <div className="flex items-center gap-3 rounded-2xl bg-base-100/70 p-3 shrink-0 mb-3 border border-base-content/5">
+                {/* Back button on mobile */}
+                <button
+                  onClick={() => setActiveContact(null)}
+                  className="btn btn-sm btn-ghost lg:hidden p-1 min-h-0 h-auto"
+                >
+                  <FiArrowLeft size={20} className="text-base-content" />
+                </button>
                 <div className="flex items-center gap-3">
                   <Link to={`/user/${activeContact.handle}`}>
                     <img
@@ -231,7 +251,7 @@ export default function Messages() {
                   <div>
                     <Link
                       to={`/user/${activeContact.handle}`}
-                      className="font-semibold text-sm hover:text-primary transition-colors"
+                      className="font-semibold text-sm text-base-content hover:text-primary transition-colors"
                     >
                       {activeContact.name}
                     </Link>
@@ -262,13 +282,13 @@ export default function Messages() {
                           className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
                             isMe
                               ? 'bg-primary text-primary-content rounded-br-xs'
-                              : 'bg-base-200 text-base-content border border-white/10 rounded-bl-xs'
+                              : 'bg-base-200 text-base-content border border-base-content/10 rounded-bl-xs'
                           }`}
                         >
                           <p className="break-words">{msg.text}</p>
                           <p
                             className={`text-[9px] font-mono mt-1 ${
-                              isMe ? 'text-primary-content/70 text-right' : 'text-accent'
+                              isMe ? 'text-primary-content/75 text-right' : 'text-accent'
                             }`}
                           >
                             {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -290,7 +310,7 @@ export default function Messages() {
                   type="text"
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  className="input input-bordered flex-1 bg-base-100/70 focus:outline-none focus:border-primary"
+                  className="input input-bordered flex-1 bg-base-100/70 text-base-content focus:outline-none focus:border-primary"
                   placeholder={`Message ${activeContact.name}…`}
                 />
                 <button

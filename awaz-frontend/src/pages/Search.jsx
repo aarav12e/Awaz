@@ -55,25 +55,25 @@ export default function Search() {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       {/* Search Header */}
       <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-white">Search</h1>
-        <p className="text-sm text-white/50">Find member profiles by unique username or name.</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-base-content">Search</h1>
+        <p className="text-sm text-base-content/50">Find member profiles by unique username or name.</p>
       </div>
 
       {/* Search Bar Input */}
       <div className="relative">
-        <FiSearch className="absolute left-4 top-3.5 text-white/40" size={18} />
+        <FiSearch className="absolute left-4 top-3.5 text-base-content/40" size={18} />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by unique username (e.g. aarav12f)..."
-          className="w-full rounded-2xl border border-white/10 bg-base-200/90 pl-11 pr-10 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-lg"
+          className="w-full rounded-2xl border border-base-content/10 bg-base-200/90 pl-11 pr-10 py-3 text-sm text-base-content placeholder-base-content/30 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-lg"
           autoFocus
         />
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="absolute right-3.5 top-3.5 text-white/40 hover:text-white"
+            className="absolute right-3.5 top-3.5 text-base-content/40 hover:text-base-content"
           >
             <FiX size={18} />
           </button>
@@ -82,13 +82,13 @@ export default function Search() {
 
       {/* Results Section */}
       {query.trim() === '' ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 rounded-2xl border border-white/5 bg-base-200/30">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/5 text-white/40">
+        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 rounded-2xl border border-base-content/5 bg-base-200/30">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-base-content/5 text-base-content/40">
             <FiSearch size={28} />
           </div>
           <div>
-            <h3 className="font-display text-base font-semibold text-white">Search Awaz Members</h3>
-            <p className="text-xs text-white/40 mt-1 max-w-xs">
+            <h3 className="font-display text-base font-semibold text-base-content">Search Awaz Members</h3>
+            <p className="text-xs text-base-content/40 mt-1 max-w-xs">
               Type a unique username or handle above to find and connect with specific members.
             </p>
           </div>
@@ -100,12 +100,12 @@ export default function Search() {
           </span>
         </div>
       ) : results.length === 0 ? (
-        <div className="py-16 text-center text-white/40 font-mono text-sm rounded-2xl border border-white/5 bg-base-200/30">
-          No members found matching "<span className="text-white">{query}</span>"
+        <div className="py-16 text-center text-base-content/40 font-mono text-sm rounded-2xl border border-base-content/5 bg-base-200/30">
+          No members found matching "<span className="text-base-content font-semibold">{query}</span>"
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs font-mono uppercase tracking-wider text-white/40 px-1">
+          <p className="text-xs font-mono uppercase tracking-wider text-base-content/40 px-1">
             {results.length} {results.length === 1 ? 'Member' : 'Members'} Found
           </p>
 
@@ -119,7 +119,7 @@ export default function Search() {
                 <Link
                   key={item._id || item.id}
                   to={`/${handle.replace('@', '')}`}
-                  className="flex items-center justify-between p-3.5 rounded-2xl border border-white/10 bg-base-200/80 hover:bg-base-200 transition-all group"
+                  className="flex items-center justify-between p-3.5 rounded-2xl border border-base-content/10 bg-base-200/80 hover:bg-base-200 transition-all group"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
                     <img
@@ -128,16 +128,16 @@ export default function Search() {
                         `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(item.name)}`
                       }
                       alt={item.name}
-                      className="h-12 w-12 rounded-full object-cover shrink-0 bg-base-300 border border-white/10"
+                      className="h-12 w-12 rounded-full object-cover shrink-0 bg-base-300 border border-base-content/10"
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-white text-sm truncate">{handle}</span>
+                        <span className="font-semibold text-base-content text-sm truncate">{handle}</span>
                         {item.verified && (
                           <FiCheckCircle size={14} className="text-primary shrink-0" />
                         )}
                       </div>
-                      <p className="text-xs text-white/50 truncate">{item.name}</p>
+                      <p className="text-xs text-base-content/50 truncate">{item.name}</p>
                     </div>
                   </div>
 
@@ -145,7 +145,7 @@ export default function Search() {
                     onClick={(e) => handleFollowToggle(e, item)}
                     className={`btn btn-sm text-xs font-semibold px-4 rounded-xl shrink-0 transition-all ${
                       isFollowing
-                        ? 'bg-white/10 hover:bg-white/20 text-white border-0'
+                        ? 'bg-base-content/10 hover:bg-base-content/20 text-base-content border-0'
                         : 'bg-primary hover:bg-primary/90 text-white border-0'
                     }`}
                   >

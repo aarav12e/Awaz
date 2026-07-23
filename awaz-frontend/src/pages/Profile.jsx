@@ -89,7 +89,7 @@ export default function Profile() {
           <img
             src={avatar}
             alt={name}
-            className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border border-white/10 bg-base-300 shadow-lg"
+            className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border border-base-content/10 bg-base-300 shadow-lg"
           />
         </div>
 
@@ -97,7 +97,7 @@ export default function Profile() {
         <div className="flex-1 space-y-5 text-center sm:text-left min-w-0">
           {/* Row 1: Username & Action Buttons */}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 md:gap-4">
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-white flex items-center gap-1.5">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-base-content flex items-center gap-1.5">
               {handle}
               {verified && (
                 <FiCheckCircle
@@ -111,19 +111,19 @@ export default function Profile() {
             <div className="flex items-center gap-2">
               <Link
                 to="/settings"
-                className="btn btn-sm bg-white/10 hover:bg-white/20 border-0 text-white font-medium px-4 rounded-lg text-xs"
+                className="btn btn-sm bg-base-content/10 hover:bg-base-content/20 border-0 text-base-content font-medium px-4 rounded-lg text-xs"
               >
                 Edit profile
               </Link>
               <button
                 onClick={handleShareProfile}
-                className="btn btn-sm bg-white/10 hover:bg-white/20 border-0 text-white font-medium px-3 rounded-lg text-xs gap-1.5"
+                className="btn btn-sm bg-base-content/10 hover:bg-base-content/20 border-0 text-base-content font-medium px-3 rounded-lg text-xs gap-1.5"
               >
                 <FiShare2 size={13} /> Share profile
               </button>
               <Link
                 to="/settings"
-                className="btn btn-sm btn-ghost btn-square text-white/70 hover:text-white"
+                className="btn btn-sm btn-ghost btn-square text-base-content/75 hover:text-base-content"
               >
                 <FiSettings size={18} />
               </Link>
@@ -133,30 +133,30 @@ export default function Profile() {
           {/* Row 2: Stats (Dispatches, Followers, Following) */}
           <div className="flex items-center justify-center sm:justify-start gap-8 md:gap-10 text-sm">
             <div>
-              <span className="font-bold text-white text-base">{posts.length}</span>{' '}
-              <span className="text-white/60">dispatches</span>
+              <span className="font-bold text-base-content text-base">{posts.length}</span>{' '}
+              <span className="text-base-content/60">dispatches</span>
             </div>
             <Link
               to={`/${handle}/followers`}
               className="hover:opacity-80 transition-opacity"
             >
-              <span className="font-bold text-white text-base">{followersCount}</span>{' '}
-              <span className="text-white/60">followers</span>
+              <span className="font-bold text-base-content text-base">{followersCount}</span>{' '}
+              <span className="text-base-content/60">followers</span>
             </Link>
             <Link
               to={`/${handle}/following`}
               className="hover:opacity-80 transition-opacity"
             >
-              <span className="font-bold text-white text-base">{followingCount}</span>{' '}
-              <span className="text-white/60">following</span>
+              <span className="font-bold text-base-content text-base">{followingCount}</span>{' '}
+              <span className="text-base-content/60">following</span>
             </Link>
           </div>
 
           {/* Row 3: Name & Bio & Website */}
           <div className="space-y-1 text-sm">
-            <p className="font-bold text-white text-base">{name}</p>
+            <p className="font-bold text-base-content text-base">{name}</p>
             {bio && (
-              <p className="text-white/80 whitespace-pre-line leading-relaxed max-w-lg font-normal">
+              <p className="text-base-content/85 whitespace-pre-line leading-relaxed max-w-lg font-normal">
                 {bio}
               </p>
             )}
@@ -177,14 +177,14 @@ export default function Profile() {
       </div>
 
       {/* ── Instagram Tab Navigation ─────────────────────────────────── */}
-      <div className="border-t border-white/10 pt-2">
+      <div className="border-t border-base-content/10 pt-2">
         <div className="flex justify-center gap-12 text-xs font-mono tracking-widest uppercase">
           <button
             onClick={() => setActiveTab('posts')}
             className={`flex items-center gap-2 py-3 border-t-2 transition-all ${
               activeTab === 'posts'
-                ? 'border-white text-white font-bold'
-                : 'border-transparent text-white/40 hover:text-white/70'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-base-content/40 hover:text-base-content/75'
             }`}
           >
             <FiGrid size={14} /> Dispatches
@@ -193,8 +193,8 @@ export default function Profile() {
             onClick={() => setActiveTab('reels')}
             className={`flex items-center gap-2 py-3 border-t-2 transition-all ${
               activeTab === 'reels'
-                ? 'border-white text-white font-bold'
-                : 'border-transparent text-white/40 hover:text-white/70'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-base-content/40 hover:text-base-content/75'
             }`}
           >
             <FiPlayCircle size={14} /> Reels
@@ -203,8 +203,8 @@ export default function Profile() {
             onClick={() => setActiveTab('saved')}
             className={`flex items-center gap-2 py-3 border-t-2 transition-all ${
               activeTab === 'saved'
-                ? 'border-white text-white font-bold'
-                : 'border-transparent text-white/40 hover:text-white/70'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-base-content/40 hover:text-base-content/75'
             }`}
           >
             <FiBookmark size={14} /> Saved
@@ -215,12 +215,12 @@ export default function Profile() {
       {/* ── Posts / Dispatches Grid ─────────────────────────────────── */}
       {posts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 text-white/60">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-base-content/20 text-base-content/60">
             <FiCamera size={28} />
           </div>
           <div>
-            <h3 className="font-display text-xl font-bold text-white">No Dispatches Yet</h3>
-            <p className="text-sm text-white/50 mt-1 max-w-sm">
+            <h3 className="font-display text-xl font-bold text-base-content">No Dispatches Yet</h3>
+            <p className="text-sm text-base-content/50 mt-1 max-w-sm">
               When you post stories or reports, they will appear here on your profile grid.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function Profile() {
           {posts.map((post) => (
             <div
               key={post._id}
-              className="group relative aspect-square rounded-xl bg-base-200 overflow-hidden border border-white/10 shadow-md cursor-pointer"
+              className="group relative aspect-square rounded-xl bg-base-200 overflow-hidden border border-base-content/10 shadow-md cursor-pointer"
             >
               {post.mediaUrl ? (
                 <img
@@ -249,10 +249,10 @@ export default function Profile() {
                   <span className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
                     {post.category || 'NEWS'}
                   </span>
-                  <p className="font-semibold text-xs sm:text-sm text-white line-clamp-3">
+                  <p className="font-semibold text-xs sm:text-sm text-base-content line-clamp-3">
                     {post.headline}
                   </p>
-                  <span className="text-[9px] font-mono text-white/40">
+                  <span className="text-[9px] font-mono text-base-content/40">
                     {new Date(post.createdAt).toLocaleDateString()}
                   </span>
                 </div>
