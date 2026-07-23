@@ -26,10 +26,7 @@ jobs:
         working-directory: awaz-backend
 
       - name: Run Backend Lint / Check
-        run: |
-          if npm run lint --if-present; then
-            npm run lint
-          fi
+        run: npm run lint --if-present
         working-directory: awaz-backend
 
   frontend:

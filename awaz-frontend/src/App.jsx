@@ -23,6 +23,10 @@ const Followers = lazy(() => import('./pages/Followers'))
 const Following = lazy(() => import('./pages/Following'))
 const UserProfile = lazy(() => import('./pages/UserProfile'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const About = lazy(() => import('./pages/About'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Terms = lazy(() => import('./pages/Terms'))
+const Contact = lazy(() => import('./pages/Contact'))
 
 function RouteFallback() {
   return (
@@ -139,6 +143,10 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
 
           <Route
             element={

@@ -231,13 +231,19 @@ export default function Login() {
             </div>
 
             <nav className="flex flex-wrap justify-center gap-x-6 gap-y-1">
-              {['About', 'Privacy', 'Terms', 'Contact', 'Open Source'].map((item) => (
-                <span
-                  key={item}
-                  className="cursor-default text-xs text-white/25 transition-colors hover:text-white/50"
+              {[
+                { label: 'About', path: '/about' },
+                { label: 'Privacy', path: '/privacy' },
+                { label: 'Terms', path: '/terms' },
+                { label: 'Contact', path: '/contact' }
+              ].map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  className="text-xs text-white/25 transition-colors hover:text-white/50"
                 >
-                  {item}
-                </span>
+                  {item.label}
+                </Link>
               ))}
             </nav>
 
