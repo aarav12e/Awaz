@@ -20,35 +20,53 @@ const createPost = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Caption is required');
   }
 
+  const pathModule = require('path');
+  const ext = pathModule.extname(req.file.path).toLowerCase();
+  const isImage = (req.file.mimetype && req.file.mimetype.startsWith('image/')) ||
+    ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext);
+
   let uploadResult;
   try {
-    // resource_type: 'video' streams the file to Cloudinary and lets it
-    // handle transcoding/thumbnail generation for us.
     uploadResult = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: 'video',
+      resource_type: isImage ? 'image' : 'video',
       folder: 'awaz/posts',
-      eager: [{ format: 'jpg', start_offset: '1' }], // auto thumbnail frame
     });
+  } catch (cloudinaryError) {
+    console.error('================ CLOUDINARY UPLOAD ERROR ================');
+    console.error(cloudinaryError);
+    console.error('=========================================================');
+    throw new ApiError(500, `Cloudinary upload failed: ${cloudinaryError.message}`);
   } finally {
     // Always clean up the temp file, upload succeeded or not.
     fs.unlink(req.file.path, () => {});
   }
 
-  const post = await Post.create({
+  const secureUrl = uploadResult.secure_url;
+  const thumbnailUrl = isImage ? secureUrl : (secureUrl ? secureUrl.replace(/\.[^/.]+$/, '.jpg') : '');
+
+  const postData = {
     reporter: req.user._id,
     caption: caption.trim(),
     locationName: locationName || '',
-    geo:
-      lng && lat
-        ? { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] }
-        : undefined,
+    mediaType: isImage ? 'image' : 'video',
     video: {
-      url: uploadResult.secure_url,
+      url: secureUrl,
       publicId: uploadResult.public_id,
       duration: uploadResult.duration || 0,
-      thumbnailUrl: uploadResult.eager?.[0]?.secure_url || '',
+      thumbnailUrl: thumbnailUrl,
     },
-  });
+  };
+
+  const parsedLng = parseFloat(lng);
+  const parsedLat = parseFloat(lat);
+  if (!isNaN(parsedLng) && !isNaN(parsedLat)) {
+    postData.geo = {
+      type: 'Point',
+      coordinates: [parsedLng, parsedLat],
+    };
+  }
+
+  const post = await Post.create(postData);
 
   const populated = await post.populate('reporter', 'name handle avatar verified');
 

@@ -16,12 +16,14 @@ export default function Upload() {
 
   const handleFile = (f) => {
     if (!f) return
-    if (!f.type.startsWith('video/')) {
-      toast.error('Only video files are supported')
+    const isVideo = f.type.startsWith('video/')
+    const isImage = f.type.startsWith('image/')
+    if (!isVideo && !isImage) {
+      toast.error('Only video and image files are supported')
       return
     }
     if (f.size > 500 * 1024 * 1024) {
-      toast.error('Keep clips under 500MB for now')
+      toast.error('Keep files under 500MB')
       return
     }
     setFile(f)
@@ -36,7 +38,7 @@ export default function Upload() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!file) {
-      toast.error('Attach a video first')
+      toast.error('Attach a photo or video clip first')
       return
     }
     if (!caption.trim()) {
@@ -75,7 +77,7 @@ export default function Upload() {
   return (
     <div>
       <h1 className="font-display text-xl tracking-tight mb-1">File a Report</h1>
-      <p className="text-accent text-sm mb-6">Raw footage, straight from where it happened.</p>
+      <p className="text-accent text-sm mb-6">Raw media, straight from where it happened.</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div
@@ -90,7 +92,7 @@ export default function Upload() {
           <input
             ref={inputRef}
             type="file"
-            accept="video/*"
+            accept="video/*,image/*"
             className="hidden"
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
@@ -112,8 +114,8 @@ export default function Upload() {
           ) : (
             <>
               <FiUploadCloud className="mx-auto mb-3 text-accent" size={30} />
-              <p className="text-sm font-medium">Drag a clip here, or tap to browse</p>
-              <p className="text-xs text-accent mt-1">MP4, MOV — up to 500MB</p>
+              <p className="text-sm font-medium font-display">Drag a photo or clip here, or tap to browse</p>
+              <p className="text-xs text-accent mt-1">MP4, MOV, JPG, PNG, WEBP — up to 500MB</p>
             </>
           )}
         </div>

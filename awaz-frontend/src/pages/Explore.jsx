@@ -5,12 +5,14 @@ import LazyImage from '../components/LazyImage'
 import api from '../lib/axios'
 import useAuthStore from '../store/useAuthStore'
 import toast from 'react-hot-toast'
+import ReelModal from '../components/ReelModal'
 
 export default function Explore() {
   const [tab, setTab] = useState('posts') // 'posts' | 'people'
   const [search, setSearch] = useState('')
   const [posts, setPosts] = useState([])
   const [loadingPosts, setLoadingPosts] = useState(true)
+  const [selectedReel, setSelectedReel] = useState(null)
 
   const { user, registeredUsers, following, followUser, unfollowUser } = useAuthStore()
 
@@ -93,23 +95,39 @@ export default function Explore() {
 
       {/* ── POSTS TAB ────────────────────────────────────────────────── */}
       {tab === 'posts' && (
-        <div className="grid grid-cols-3 gap-1">
-          {posts.map((post) => (
-            <div key={post._id} className="relative aspect-[9/16] cursor-pointer group">
-              <LazyImage
-                src={post.video?.thumbnailUrl}
-                alt={post.caption}
-                wrapperClassName="w-full h-full rounded"
-                className="w-full h-full object-cover rounded"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors rounded flex items-center justify-center">
-                <FiPlay className="text-bone opacity-0 group-hover:opacity-100 transition-opacity" size={22} />
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+          {posts.map((post) => {
+            const thumb = post.video?.thumbnailUrl || post.video?.url || post.mediaUrl
+            return (
+              <div
+                key={post._id}
+                onClick={() => setSelectedReel(post)}
+                className="relative aspect-[9/16] cursor-pointer group bg-base-200 rounded-[14px] overflow-hidden border border-base-content/10"
+              >
+                {thumb ? (
+                  <img
+                    src={thumb}
+                    alt={post.caption}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105 rounded-[14px]"
+                  />
+                ) : (
+                  <div className="w-full h-full p-2 flex flex-col justify-between text-xs bg-base-300">
+                    <p className="line-clamp-3 text-base-content font-medium">{post.caption}</p>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors rounded-[14px] flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <FiPlay className="ml-0.5 text-white" size={20} />
+                  </div>
+                </div>
+                {post.video?.duration ? (
+                  <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded-full">
+                    {Math.round(post.video.duration)}s
+                  </span>
+                ) : null}
               </div>
-              <span className="absolute bottom-1 right-1 bg-black/70 text-bone text-[9px] font-mono px-1 py-0.5 rounded">
-                {post.video?.duration ? Math.floor(post.video.duration) + 's' : '0s'}
-              </span>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -195,6 +213,9 @@ export default function Explore() {
           )}
         </div>
       )}
+
+      {/* Reel Modal */}
+      {selectedReel && <ReelModal post={selectedReel} onClose={() => setSelectedReel(null)} />}
     </div>
   )
 }

@@ -13,6 +13,11 @@ const postSchema = new mongoose.Schema(
       required: [true, 'Caption is required'],
       maxlength: 500,
     },
+    mediaType: {
+      type: String,
+      enum: ['video', 'image'],
+      default: 'video',
+    },
     // Cloudinary response fields — needed to manage/delete the asset later
     video: {
       url: { type: String, required: true },
@@ -29,11 +34,9 @@ const postSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ['Point'],
-        default: 'Point',
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
-        default: undefined,
       },
     },
     verdict: {
@@ -57,7 +60,7 @@ const postSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-postSchema.index({ geo: '2dsphere' });
+postSchema.index({ geo: '2dsphere' }, { sparse: true });
 postSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Post', postSchema);

@@ -19,6 +19,7 @@ import { useUser } from '@clerk/clerk-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
+import ReelModal from '../components/ReelModal'
 
 export default function Profile() {
   const { user: storeUser } = useAuthStore()
@@ -27,6 +28,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('posts') // 'posts' | 'reels' | 'saved'
   const [posts, setPosts] = useState([])
   const [profileData, setProfileData] = useState(null)
+  const [selectedReel, setSelectedReel] = useState(null)
 
   const activeUser =
     storeUser ||
@@ -233,46 +235,53 @@ export default function Profile() {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-1.5 sm:gap-4 md:gap-6">
-          {posts.map((post) => (
-            <div
-              key={post._id}
-              className="group relative aspect-square rounded-xl bg-base-200 overflow-hidden border border-base-content/10 shadow-md cursor-pointer"
-            >
-              {post.mediaUrl ? (
-                <img
-                  src={post.mediaUrl}
-                  alt={post.headline}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <div className="h-full w-full p-4 flex flex-col justify-between bg-gradient-to-br from-base-200 via-base-300 to-base-200">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
-                    {post.category || 'NEWS'}
-                  </span>
-                  <p className="font-semibold text-xs sm:text-sm text-base-content line-clamp-3">
-                    {post.headline}
-                  </p>
-                  <span className="text-[9px] font-mono text-base-content/40">
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
+          {posts.map((post) => {
+            const thumb = post.video?.thumbnailUrl || post.video?.url || post.mediaUrl
+            return (
+              <div
+                key={post._id}
+                onClick={() => setSelectedReel(post)}
+                className="group relative aspect-square rounded-xl bg-base-200 overflow-hidden border border-base-content/10 shadow-md cursor-pointer"
+              >
+                {thumb ? (
+                  <img
+                    src={thumb}
+                    alt={post.caption || post.headline}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="h-full w-full p-4 flex flex-col justify-between bg-gradient-to-br from-base-200 via-base-300 to-base-200">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
+                      {post.category || 'NEWS'}
+                    </span>
+                    <p className="font-semibold text-xs sm:text-sm text-base-content line-clamp-3">
+                      {post.caption || post.headline}
+                    </p>
+                    <span className="text-[9px] font-mono text-base-content/40">
+                      {new Date(post.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
 
-              {/* Hover Overlay with Likes Count */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 text-white font-bold text-sm">
-                <div className="flex items-center gap-1.5">
-                  <FiHeart size={18} className="fill-white" />
-                  <span>{post.likesCount || (post.likes ? post.likes.length : 0)}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FiMessageCircle size={18} className="fill-white" />
-                  <span>{post.commentCount || 0}</span>
+                {/* Hover Overlay with Likes Count & Play Icon */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 text-white font-bold text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <FiHeart size={18} className="fill-white" />
+                    <span>{post.likesCount || (post.likes ? post.likes.length : 0)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <FiMessageCircle size={18} className="fill-white" />
+                    <span>{post.commentCount || 0}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
+
+      {/* Reel Modal Detail Viewer */}
+      {selectedReel && <ReelModal post={selectedReel} onClose={() => setSelectedReel(null)} />}
     </div>
   )
 }

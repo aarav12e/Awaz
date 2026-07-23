@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
+import ReelModal from '../components/ReelModal'
 
 export default function UserProfile() {
   const { userId, handle: paramHandle } = useParams()
@@ -18,6 +19,7 @@ export default function UserProfile() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [selectedReel, setSelectedReel] = useState(null)
 
   const targetIdentifier = paramHandle || userId
   const isOwnProfile = user && profile && (user.id === profile.id || user._id === profile._id)
@@ -181,25 +183,41 @@ export default function UserProfile() {
         <>
           <p className="px-1 text-xs font-mono uppercase tracking-widest text-accent">Dispatches</p>
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            {posts.map((post) => (
-              <div key={post._id} className="relative aspect-[9/16] cursor-pointer group">
-                <img
-                  src={post.video?.thumbnailUrl || ''}
-                  alt={post.caption}
-                  className="w-full h-full object-cover rounded-[14px]"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors rounded-[14px] flex flex-col items-center justify-center gap-1">
-                  {post.video?.duration && (
-                    <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-bone text-[9px] font-mono px-1.5 py-0.5 rounded-full">
-                      {Math.round(post.video.duration)}s
-                    </span>
+            {posts.map((post) => {
+              const thumb = post.video?.thumbnailUrl || post.video?.url || post.mediaUrl
+              return (
+                <div
+                  key={post._id}
+                  onClick={() => setSelectedReel(post)}
+                  className="relative aspect-[9/16] cursor-pointer group bg-base-200 rounded-[14px] overflow-hidden border border-base-content/10"
+                >
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt={post.caption}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full p-2 flex flex-col justify-between text-xs bg-base-300">
+                      <p className="line-clamp-3 text-base-content font-medium">{post.caption}</p>
+                    </div>
                   )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors flex flex-col items-center justify-center gap-1">
+                    {post.video?.duration && (
+                      <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded-full">
+                        {Math.round(post.video.duration)}s
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </>
       )}
+
+      {/* Reel Modal */}
+      {selectedReel && <ReelModal post={selectedReel} onClose={() => setSelectedReel(null)} />}
     </div>
   )
 }

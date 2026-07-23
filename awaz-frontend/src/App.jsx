@@ -15,6 +15,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const Feed = lazy(() => import('./pages/Feed'))
 const Search = lazy(() => import('./pages/Search'))
 const Explore = lazy(() => import('./pages/Explore'))
+const Reels = lazy(() => import('./pages/Reels'))
 const Upload = lazy(() => import('./pages/Upload'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Settings = lazy(() => import('./pages/Settings'))
@@ -158,7 +159,7 @@ export default function App() {
             <Route path="/" element={<Feed />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/search" element={<Search />} />
-            <Route path="/reels" element={<Navigate to="/explore" replace />} />
+            <Route path="/reels" element={<Reels />} />
             <Route path="/notifications" element={<div className="p-8 text-center text-accent">Notifications coming soon</div>} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/profile" element={<Profile />} />
