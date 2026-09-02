@@ -46,3 +46,5 @@ JWT_SECRET=your_secret_key
 
 - The frontend currently uses mock/demo data for parts of the UI experience.
 - The backend is ready for expansion with auth, posts, comments, and media handling.
+
+this is underprocess
